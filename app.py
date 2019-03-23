@@ -1,8 +1,17 @@
 from flask import request, Response, Flask
 from pystress import *
 import json
+from threading import Timer
+
 
 app = Flask(__name__)
+
+processes = dict()
+
+def stop(procs):
+    for p in procs:
+        p.terminate()
+        processes.pop(p.pid)
 
 @app.route('/start', methods=['POST'])
 def start():
@@ -10,9 +19,8 @@ def start():
         exec_time = request.json["exec_time"]
         proc_num = request.json["proc_num"]
     except:
-        msg = "Usage: pystress [exec_time] [proc_num]\n"
-        sys.stderr.write(msg)
-        sys.exit(1)
+        msg = "Usage: 'exec_time' and 'proc_num are required"
+        return Response(msg)
     procs = []
     conns = []
     for i in range(proc_num):
@@ -21,17 +29,19 @@ def start():
         p.start()
         procs.append(p)
         conns.append(parent_conn)
-
+        processes[p.pid] = {'is_alive': p.is_alive(), 'exec_time': exec_time}
+    print(processes)
     for conn in conns:
         try:
             print(conn.recv())
         except EOFError:
             continue
+    t = Timer(exec_time, stop, [procs])
+    t.start()
+    return Response("{} processes launched for {} seconds".format(proc_num, exec_time))
 
-    time.sleep(exec_time)
-
-    for p in procs:
-        p.terminate()
-    return Response(json.dumps({"message": "loaded had been finished", "procs": len(procs)}))
+@app.route('/')
+def index():
+    return Response(json.dumps(processes))
 
 app.run('0.0.0.0')
