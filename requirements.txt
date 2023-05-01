@@ -3,7 +3,7 @@ backports.functools-lru-cache==1.5
 Click==7.0
 configparser==3.7.3
 enum34==1.1.6
-Flask==1.0.2
+Flask==2.3.2
 futures==3.2.0
 isort==4.3.15
 itsdangerous==1.1.0
